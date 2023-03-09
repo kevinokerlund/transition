@@ -2,7 +2,7 @@ import React, { Component, createRef, ReactElement, ReactNode, RefObject } from 
 import { applyPropsIfRenderCallback } from './utils/apply-props-if-render-callback';
 import { createEasing, Easing } from './utils/easing';
 import { getPositionRelativeToParent, getPositionChanges, Position } from './utils/position';
-import { convertStyleObjectToCSSText } from './utils/styles';
+import { InlineStyles, Transform } from './utils/styles';
 
 type FunctionAsChild = () => ReactNode;
 
@@ -76,23 +76,24 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 				//
 			},
 			(delta) => {
-				const gridArea = style?.gridArea ? `grid-area:${style.gridArea ?? ''}` : '';
-				const cssTextArr = [gridArea];
+				const containerStyles = new InlineStyles({
+					gridArea: style?.gridArea ?? '',
+				});
 
-				const transformTextArr = ['transform-origin: top left; transform:'];
+				const outerTransform = new Transform('top left');
 
 				if (positionChanges.top || positionChanges.left) {
 					const x = (snapshot.left - trueOuterPosition.left) * (1 - delta);
 					const y = (snapshot.top - trueOuterPosition.top) * (1 - delta);
 
 					if (positionChanges.top && positionChanges.left) {
-						transformTextArr.push(`translate(${x}px, ${y}px)`);
+						outerTransform.translate(`${x}px`, `${y}px`);
 					}
 					else if (positionChanges.top) {
-						transformTextArr.push(`translateY(${y}px)`);
+						outerTransform.translateY(`${y}px`);
 					}
 					else if (positionChanges.left) {
-						transformTextArr.push(`translateX(${x}px)`);
+						outerTransform.translateX(`${x}px`);
 					}
 				}
 
@@ -100,20 +101,20 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 					// const changeInWidth = Math.abs(trueOuterPosition.width - snapshot.width);
 					// const changeInHeight = Math.abs(trueOuterPosition.height - snapshot.height);
 
-					const reverseScaleCssText = ['transform-origin: center center; transform:'];
-					const preserveAspectCssText = ['transform-origin: center center; transform:'];
+					const reverseScaleTransform = new Transform('center center');
+					const preserveAspectTransform = new Transform('center center');
 
 					const xScale = ((trueOuterPosition.width - snapshot.width) * delta + snapshot.width) / trueOuterPosition.width;
 					const yScale = ((trueOuterPosition.height - snapshot.height) * delta + snapshot.height) / trueOuterPosition.height;
 
 					if (positionChanges.width) {
-						transformTextArr.push(`scaleX(${xScale})`);
-						reverseScaleCssText.push(`scaleX(${1 / xScale})`);
+						outerTransform.scaleX(`${xScale}`);
+						reverseScaleTransform.scaleX(`${1 / xScale}`);
 					}
 
 					if (positionChanges.height) {
-						transformTextArr.push(`scaleY(${yScale})`);
-						reverseScaleCssText.push(`scaleY(${1 / yScale})`);
+						outerTransform.scaleY(`${yScale}`);
+						reverseScaleTransform.scaleY(`${1 / yScale}`);
 					}
 
 					const currentWidth = trueOuterPosition.width * xScale;
@@ -135,35 +136,30 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 
 					if (toMeetScaleWidthCouldbeSetTo <= currentWidth) {
 						const calc = toMeetScaleWidthCouldbeSetTo / currentWidth;
-						preserveAspectCssText.push(`scaleX(${calc})`);
+						preserveAspectTransform.scaleX(`${calc}`);
 					}
 					if (toMeetScaleHeightCouldbeSetTo <= currentHeight) {
 						const calc = toMeetScaleHeightCouldbeSetTo / currentHeight;
-						preserveAspectCssText.push(`scaleY(${calc})`);
+						preserveAspectTransform.scaleY(`${calc}`);
 					}
 					// const offsetScaleY = actualWidth / (trueOuterPosition.width / trueOuterPosition.height) / actualHeight;
 					// const offsetScaleX = actualHeight / (trueOuterPosition.height / trueOuterPosition.width) / actualWidth;
 
-					this._containerRef.current?.querySelectorAll<HTMLElement>('.js-transition-reverse-scale').forEach(element => {
-						let userStyle = JSON.parse(element.getAttribute('data-style') || '');
-						userStyle = convertStyleObjectToCSSText(userStyle);
-						const joined = [userStyle, reverseScaleCssText.join('')].join(';');
-						element.style.cssText = joined;
-					});
-
-					this._containerRef.current?.querySelectorAll<HTMLElement>('.js-transition-preserve-aspect-ratio').forEach(element => {
-						let userStyle = JSON.parse(element.getAttribute('data-style') || '');
-						userStyle = convertStyleObjectToCSSText(userStyle);
-						const joined = [userStyle, preserveAspectCssText.join('')].join(';');
-						element.style.cssText = joined;
-						// element.style.cssText = preserveAspectCssText.join('');
-					});
+					[
+						['.js-transition-reverse-scale', reverseScaleTransform],
+						['.js-transition-preserve-aspect-ratio', preserveAspectTransform],
+					]
+						.forEach(([selector, transform]) => {
+							this._containerRef.current?.querySelectorAll<HTMLElement>(selector as string).forEach(element => {
+								const userStyle = JSON.parse(element.getAttribute('data-style') || '');
+								const styles = new InlineStyles(userStyle).merge((transform as Transform).toObject()).toCssText();
+								element.style.cssText = styles;
+							});
+						});
 				}
 
-				cssTextArr.push(transformTextArr.join(''));
-
 				if (this._containerRef.current) {
-					this._containerRef.current.style.cssText = cssTextArr.join(';');
+					this._containerRef.current.style.cssText = containerStyles.merge(outerTransform.toObject()).toCssText();
 				}
 			},
 			() => {
