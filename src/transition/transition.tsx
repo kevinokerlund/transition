@@ -1,4 +1,5 @@
 import React, { Component, createRef, ReactElement, ReactNode, RefObject } from 'react';
+
 import { applyPropsIfRenderCallback } from './utils/apply-props-if-render-callback';
 import { createEasing, Easing } from './utils/easing';
 import { getPositionRelativeToParent, getPositionChanges, Position } from './utils/position';
@@ -9,6 +10,7 @@ type FunctionAsChild = () => ReactNode;
 type TransitionProps = {
 	children: ReactNode | FunctionAsChild;
 	className?: string;
+	duration?: number;
 	style?: React.CSSProperties,
 }
 
@@ -43,10 +45,8 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 		isTransitioning: false,
 	};
 
-	componentDidMount(): void {
-		// console.log('MOUNT!');
-		// const position = getPositionRelativeToParent(this._outerElementRef.current);
-		// this._lastNextPosition = position;
+	componentDidMount() {
+		//
 	}
 
 	getSnapshotBeforeUpdate(prevProps: Readonly<TransitionProps>, prevState: Readonly<TransitionState>) {
@@ -57,22 +57,19 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 		return getPositionRelativeToParent(this._containerRef.current);
 	}
 
-	componentDidUpdate(prevProps: Readonly<TransitionProps>, prevState: Readonly<TransitionState>, snapshot: Readonly<Position> | null): void {
-		if (
-			!this._containerRef.current ||
-			!snapshot
-		) {
+	componentDidUpdate(prevProps: Readonly<TransitionProps>, prevState: Readonly<TransitionState>, snapshot: Readonly<Position> | null) {
+		if (!this._containerRef.current || !snapshot) {
 			return;
 		}
 
-		const { style = {} } = this.props;
+		const { style = {}, duration = 200 } = this.props;
 
 		const trueOuterPosition = getPositionRelativeToParent(this._containerRef.current);
 		const trueAspectRatio = trueOuterPosition.width / trueOuterPosition.height;
 		const positionChanges = getPositionChanges(snapshot, trueOuterPosition);
 
 		this._easing = createEasing(
-			5000,
+			duration,
 			() => {
 				//
 			},
@@ -127,16 +124,16 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 						preserveAspectTransform.scaleY(`${calc}`);
 					}
 
-					[
-						['.js-transition-reverse-scale', reverseScaleTransform],
-						['.js-transition-preserve-aspect-ratio', preserveAspectTransform],
-					]
+					Object.entries({
+						'.js-transition-reverse-scale': reverseScaleTransform,
+						'.js-transition-preserve-aspect-ratio': preserveAspectTransform,
+					})
 						.forEach(([selector, transform]) => {
-							this._containerRef.current?.querySelectorAll<HTMLElement>(selector as string).forEach(element => {
+							this._containerRef.current?.querySelectorAll<HTMLElement>(selector).forEach(element => {
 								const userStyle = JSON.parse(element.getAttribute('data-style') || '');
 								element.style.cssText = convertCssObjectToCssText({
 									...userStyle,
-									...(transform as Transform).toObject(),
+									...transform.toObject(),
 								});
 							});
 						});
@@ -170,7 +167,7 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 		this._easing.start();
 	}
 
-	componentWillUnmount(): void {
+	componentWillUnmount() {
 		//
 	}
 
