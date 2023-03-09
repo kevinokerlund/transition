@@ -2,7 +2,7 @@ import React, { Component, createRef, ReactElement, ReactNode, RefObject } from 
 import { applyPropsIfRenderCallback } from './utils/apply-props-if-render-callback';
 import { createEasing, Easing } from './utils/easing';
 import { getPositionRelativeToParent, getPositionChanges, Position } from './utils/position';
-import { InlineStyles, Transform } from './utils/styles';
+import { convertCssObjectToCssText, Transform } from './utils/styles';
 
 type FunctionAsChild = () => ReactNode;
 
@@ -65,9 +65,10 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			return;
 		}
 
-		const { style } = this.props;
+		const { style = {} } = this.props;
 
 		const trueOuterPosition = getPositionRelativeToParent(this._containerRef.current);
+		const trueAspectRatio = trueOuterPosition.width / trueOuterPosition.height;
 		const positionChanges = getPositionChanges(snapshot, trueOuterPosition);
 
 		this._easing = createEasing(
@@ -76,10 +77,6 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 				//
 			},
 			(delta) => {
-				const containerStyles = new InlineStyles({
-					gridArea: style?.gridArea ?? '',
-				});
-
 				const outerTransform = new Transform('top left');
 
 				if (positionChanges.top || positionChanges.left) {
@@ -98,14 +95,17 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 				}
 
 				if (positionChanges.width || positionChanges.height) {
-					// const changeInWidth = Math.abs(trueOuterPosition.width - snapshot.width);
-					// const changeInHeight = Math.abs(trueOuterPosition.height - snapshot.height);
-
 					const reverseScaleTransform = new Transform('center center');
 					const preserveAspectTransform = new Transform('center center');
 
 					const xScale = ((trueOuterPosition.width - snapshot.width) * delta + snapshot.width) / trueOuterPosition.width;
 					const yScale = ((trueOuterPosition.height - snapshot.height) * delta + snapshot.height) / trueOuterPosition.height;
+
+					const currentWidth = trueOuterPosition.width * xScale;
+					const currentHeight = trueOuterPosition.height * yScale;
+
+					const toMeetScaleWidthCouldbeSetTo = currentHeight * trueAspectRatio;
+					const toMeetScaleHeightCouldbeSetTo = currentWidth / trueAspectRatio;
 
 					if (positionChanges.width) {
 						outerTransform.scaleX(`${xScale}`);
@@ -117,33 +117,15 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 						reverseScaleTransform.scaleY(`${1 / yScale}`);
 					}
 
-					const currentWidth = trueOuterPosition.width * xScale;
-					const currentHeight = trueOuterPosition.height * yScale;
-
-					const trueAspectRatio = trueOuterPosition.width / trueOuterPosition.height;
-					// const currentAspectRatio = currentWidth / currentHeight;
-					// console.log(trueAspectRatio, currentAspectRatio);
-
-					// console.log('\n');
-					// console.log('currentWidth', currentWidth, 'currentHeight', currentHeight);
-					// console.log('trueWidth', trueOuterPosition.width, 'trueHeight', trueOuterPosition.height);
-					// console.log('currentAspectRatio', currentAspectRatio, 'trueAspectRatio', trueAspectRatio);
-
-					const toMeetScaleWidthCouldbeSetTo = currentHeight * trueAspectRatio;
-					const toMeetScaleHeightCouldbeSetTo = currentWidth / trueAspectRatio;
-
-					// console.log('toMeetScaleWidthCouldbeSetTo', toMeetScaleWidthCouldbeSetTo, 'OR toMeetScaleHeightCouldbeSetTo', toMeetScaleHeightCouldbeSetTo);
-
 					if (toMeetScaleWidthCouldbeSetTo <= currentWidth) {
 						const calc = toMeetScaleWidthCouldbeSetTo / currentWidth;
 						preserveAspectTransform.scaleX(`${calc}`);
 					}
+
 					if (toMeetScaleHeightCouldbeSetTo <= currentHeight) {
 						const calc = toMeetScaleHeightCouldbeSetTo / currentHeight;
 						preserveAspectTransform.scaleY(`${calc}`);
 					}
-					// const offsetScaleY = actualWidth / (trueOuterPosition.width / trueOuterPosition.height) / actualHeight;
-					// const offsetScaleX = actualHeight / (trueOuterPosition.height / trueOuterPosition.width) / actualWidth;
 
 					[
 						['.js-transition-reverse-scale', reverseScaleTransform],
@@ -152,18 +134,36 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 						.forEach(([selector, transform]) => {
 							this._containerRef.current?.querySelectorAll<HTMLElement>(selector as string).forEach(element => {
 								const userStyle = JSON.parse(element.getAttribute('data-style') || '');
-								const styles = new InlineStyles(userStyle).merge((transform as Transform).toObject()).toCssText();
-								element.style.cssText = styles;
+								element.style.cssText = convertCssObjectToCssText({
+									...userStyle,
+									...(transform as Transform).toObject(),
+								});
 							});
 						});
 				}
 
 				if (this._containerRef.current) {
-					this._containerRef.current.style.cssText = containerStyles.merge(outerTransform.toObject()).toCssText();
+					this._containerRef.current.style.cssText = convertCssObjectToCssText({
+						...style,
+						...outerTransform.toObject(),
+					});
 				}
 			},
 			() => {
-				//
+				if (this._containerRef.current) {
+					this._containerRef.current.style.cssText = convertCssObjectToCssText(style);
+				}
+
+				[
+					['.js-transition-reverse-scale'],
+					['.js-transition-preserve-aspect-ratio'],
+				]
+					.forEach(([selector]) => {
+						this._containerRef.current?.querySelectorAll<HTMLElement>(selector).forEach(element => {
+							const userStyle = JSON.parse(element.getAttribute('data-style') || '');
+							element.style.cssText = convertCssObjectToCssText(userStyle);
+						});
+					});
 			}
 		);
 

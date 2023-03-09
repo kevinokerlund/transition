@@ -1,45 +1,16 @@
 import React from 'react';
 
-function camelCaseToKebabCase(camelCaseString: string) {
+export function camelCaseToKebabCase(camelCaseString: string) {
 	return camelCaseString.replace(/([A-Z])/g, (m, c) => {
 		return `-${c.toLowerCase()}`;
 	});
 }
 
-function convertCssObjectToCssText(styleObject: React.CSSProperties): string {
+export function convertCssObjectToCssText(styleObject: React.CSSProperties): string {
 	return Object
 		.entries(styleObject)
 		.map(([key, value]) => [camelCaseToKebabCase(key), value].join(':'))
 		.join(';');
-}
-
-export class InlineStyles {
-	styles: React.CSSProperties;
-
-	constructor(initialStyles: React.CSSProperties = {}) {
-		this.styles = { ...initialStyles };
-	}
-
-	remove(property: keyof React.CSSProperties) {
-		delete this.styles[property];
-		return this;
-	}
-
-	merge(styles: (React.CSSProperties | InlineStyles)) {
-		if (styles instanceof InlineStyles) {
-			styles = styles.styles;
-		}
-
-		this.styles = {
-			...this.styles,
-			...styles,
-		};
-		return this;
-	}
-
-	toCssText() {
-		return convertCssObjectToCssText(this.styles);
-	}
 }
 
 export class Transform {
