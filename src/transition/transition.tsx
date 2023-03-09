@@ -33,17 +33,39 @@ type ChildComponent = (
 export class Transition extends Component<TransitionProps, TransitionState> {
 	private _containerRef: RefObject<HTMLDivElement>;
 	private _easing: Easing | undefined;
+	private _isTransitioning: boolean;
+	private _lastTrueOuterPosition?: Position;
 	static ReverseScale: ChildComponent;
 	static PreserveAspectRatio: ChildComponent;
 
 	constructor(props: TransitionProps) {
 		super(props);
 		this._containerRef = createRef();
+		this._isTransitioning = false;
 	}
 
 	state: TransitionState = {
 		isTransitioning: false,
 	};
+
+	_resetElements() {
+		const { style = {} } = this.props;
+
+		if (this._containerRef.current) {
+			this._containerRef.current.style.cssText = convertCssObjectToCssText(style);
+		}
+
+		[
+			['.js-transition-reverse-scale'],
+			['.js-transition-preserve-aspect-ratio'],
+		]
+			.forEach(([selector]) => {
+				this._containerRef.current?.querySelectorAll<HTMLElement>(selector).forEach(element => {
+					const userStyle = JSON.parse(element.getAttribute('data-style') || '');
+					element.style.cssText = convertCssObjectToCssText(userStyle);
+				});
+			});
+	}
 
 	componentDidMount() {
 		//
@@ -62,16 +84,33 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			return;
 		}
 
+		if (this._isTransitioning) {
+			this._resetElements();
+		}
+
 		const { style = {}, duration = 200 } = this.props;
 
 		const trueOuterPosition = getPositionRelativeToParent(this._containerRef.current);
 		const trueAspectRatio = trueOuterPosition.width / trueOuterPosition.height;
 		const positionChanges = getPositionChanges(snapshot, trueOuterPosition);
+		const noChangesAfterInteruption = this._lastTrueOuterPosition ? !getPositionChanges(this._lastTrueOuterPosition, trueOuterPosition).some : false;
+
+		this._lastTrueOuterPosition = trueOuterPosition;
+
+		if (this._isTransitioning && !noChangesAfterInteruption) {
+			this._easing?.stop();
+		}
+
+		if (!positionChanges.some || noChangesAfterInteruption) {
+			return;
+		}
+
 
 		this._easing = createEasing(
 			duration,
 			() => {
 				//
+				this._isTransitioning = true;
 			},
 			(delta) => {
 				const outerTransform = new Transform('top left');
@@ -147,20 +186,8 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 				}
 			},
 			() => {
-				if (this._containerRef.current) {
-					this._containerRef.current.style.cssText = convertCssObjectToCssText(style);
-				}
-
-				[
-					['.js-transition-reverse-scale'],
-					['.js-transition-preserve-aspect-ratio'],
-				]
-					.forEach(([selector]) => {
-						this._containerRef.current?.querySelectorAll<HTMLElement>(selector).forEach(element => {
-							const userStyle = JSON.parse(element.getAttribute('data-style') || '');
-							element.style.cssText = convertCssObjectToCssText(userStyle);
-						});
-					});
+				this._resetElements();
+				this._isTransitioning = false;
 			}
 		);
 
