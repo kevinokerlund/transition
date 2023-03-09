@@ -5,6 +5,14 @@ export interface Position {
 	left: number;
 }
 
+export interface PositionChanges {
+	some: boolean;
+	width: boolean;
+	height: boolean;
+	top: boolean;
+	left: boolean;
+}
+
 export function getPositionRelativeToParent(element: HTMLElement): Position {
 	// const parent = element.parentElement ?? document.body;
 	const parent = document.body;
@@ -21,13 +29,7 @@ export function getPositionRelativeToParent(element: HTMLElement): Position {
 	};
 }
 
-export function getPositionChanges(previousPosition: Position, nextPosition: Position): {
-	some: boolean;
-	width: boolean;
-	height: boolean;
-	top: boolean;
-	left: boolean;
-} {
+export function getPositionChanges(previousPosition: Position, nextPosition: Position): PositionChanges {
 	// The browser does some stupid floating crap here... it can be different... might beed to adjust
 	const width = previousPosition.width !== nextPosition.width;
 	const height = previousPosition.height !== nextPosition.height;
