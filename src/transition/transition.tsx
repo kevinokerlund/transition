@@ -5,7 +5,7 @@ import { createEasing, Easing } from './utils/easing';
 import { getPositionRelativeToParent, getPositionChanges, Position } from './utils/position';
 import { convertCssObjectToCssText, Transform } from './utils/styles';
 
-type FunctionAsChild = () => ReactNode;
+type FunctionAsChild = (arg: TransitionState) => ReactNode;
 
 type TransitionProps = {
 	children: ReactNode | FunctionAsChild;
@@ -72,7 +72,8 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 	}
 
 	getSnapshotBeforeUpdate(prevProps: Readonly<TransitionProps>, prevState: Readonly<TransitionState>) {
-		if (!this._containerRef.current) {
+		const isStateUpdateAfterStartingTransition = prevState.isTransitioning !== this.state.isTransitioning;
+		if (!this._containerRef.current || isStateUpdateAfterStartingTransition) {
 			return null;
 		}
 
@@ -109,8 +110,10 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 		this._easing = createEasing(
 			duration,
 			() => {
-				//
 				this._isTransitioning = true;
+				this.setState({
+					isTransitioning: true,
+				});
 			},
 			(delta) => {
 				const outerTransform = new Transform('top left');
@@ -188,6 +191,9 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			() => {
 				this._resetElements();
 				this._isTransitioning = false;
+				this.setState({
+					isTransitioning: false,
+				});
 			}
 		);
 
