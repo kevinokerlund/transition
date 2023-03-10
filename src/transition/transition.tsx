@@ -1,6 +1,6 @@
 import React, { Component, createRef, ReactElement, ReactNode, RefObject } from 'react';
 
-import { applyPropsIfRenderCallback } from './utils/apply-props-if-render-callback';
+import { applyPropsIfRenderCallback, isRenderProp } from './utils/apply-props-if-render-callback';
 import { createEasing, Easing } from './utils/easing';
 import { getPositionRelativeToParent, getPositionChanges, Position } from './utils/position';
 import { convertCssObjectToCssText, Transform } from './utils/styles';
@@ -106,14 +106,15 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			return;
 		}
 
+		const childIsRenderProp = isRenderProp(this.props.children);
 
 		this._easing = createEasing(
 			duration,
 			() => {
 				this._isTransitioning = true;
-				this.setState({
-					isTransitioning: true,
-				});
+				if (childIsRenderProp) {
+					this.setState({ isTransitioning: true });
+				}
 			},
 			(delta) => {
 				const outerTransform = new Transform('top left');
@@ -191,9 +192,11 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			() => {
 				this._resetElements();
 				this._isTransitioning = false;
-				this.setState({
-					isTransitioning: false,
-				});
+				if (childIsRenderProp) {
+					this.setState({
+						isTransitioning: false,
+					});
+				}
 			}
 		);
 
