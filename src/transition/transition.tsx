@@ -218,7 +218,7 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 				data-transition-element="container"
 				ref={this._containerRef}
 			>
-				{applyPropsIfRenderCallback(children, { isTransitioning })}
+				{applyPropsIfRenderCallback<TransitionState>(children, { isTransitioning })}
 			</div>
 		);
 	}
