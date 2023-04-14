@@ -14,9 +14,7 @@ export interface PositionChanges {
 }
 
 export function getPositionRelativeToParent(element: HTMLElement): Position {
-	// const parent = element.parentElement ?? document.body;
-	const parent = document.body;
-	const { top: parentTop, left: parentLeft } = parent.getBoundingClientRect();
+	const { top: parentTop, left: parentLeft } = document.body.getBoundingClientRect();
 
 	const elementBox = element.getBoundingClientRect();
 	const { width, height, top, left } = elementBox;
