@@ -89,7 +89,7 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 			this._resetElements();
 		}
 
-		const { style = {}, duration = 200 } = this.props;
+		const { style = {}, duration = 1000 } = this.props;
 
 		const trueOuterPosition = getPositionRelativeToParent(this._containerRef.current);
 		const trueAspectRatio = trueOuterPosition.width / trueOuterPosition.height;
@@ -174,9 +174,21 @@ export class Transition extends Component<TransitionProps, TransitionState> {
 						.forEach(([selector, transform]) => {
 							this._containerRef.current?.querySelectorAll<HTMLElement>(selector).forEach(element => {
 								const userStyle = JSON.parse(element.getAttribute('data-style') || '');
+								// This "solves" stacking reverse scales, but eliminates the performance benefits of transform and introduces a jitter
+								// const t = transform.toObject();
+								// const scaleX = parseFloat(t.transform.replace(/^.*scaleX\((\d+\.?\d*)\).*$/, '$1'));
+								// const scaleY = parseFloat(t.transform.replace(/^.*scaleY\((\d+\.?\d*)\).*$/, '$1'));
+								// const dimensions = JSON.parse(element.getAttribute('originalDimensions') ?? JSON.stringify({
+								// 	clientWidth: element.clientWidth,
+								// 	clientHeight: element.clientHeight,
+								// }));
+								// element.setAttribute('originalDimensions', JSON.stringify(dimensions));
 								element.style.cssText = convertCssObjectToCssText({
 									...userStyle,
 									...transform.toObject(),
+									// 
+									// width: `${scaleX * dimensions.clientWidth}px`,
+									// height: `${scaleY * dimensions.clientHeight}px`,
 								});
 							});
 						});

@@ -15,10 +15,17 @@ function App() {
 			<button onClick={() => setBool(!bool)}>Swap Layout</button>
 			<button onClick={() => setOtherBool(!otherBool)}>Swap Other Bool</button>
 
-			<Transition className={'other-box ' + newBoxClassName}>
-				<Transition.PreserveAspectRatio>
-					There is a bunch of text in here... awesome! Like so awesome, serious! How about a bunch more, that sounds nice. Ok, just a bit more.
-				</Transition.PreserveAspectRatio>
+			<Transition className={'other-box ' + newBoxClassName} style={{position: 'relative'}}>
+				<div style={{border: '1px solid black'}}>
+					<Transition.ReverseScale style={{transformOrigin: '0 0 !important'}}>
+						<div>hey</div>
+						<div>what</div>
+					</Transition.ReverseScale>
+				</div>
+				<Transition.ReverseScale style={{transformOrigin: '0 top !important'}}>Hello World</Transition.ReverseScale>
+				<Transition.ReverseScale style={{position: 'absolute', right: 0, bottom: 0}}>
+					There is a bunch of text
+				</Transition.ReverseScale>
 			</Transition>
 
 			<div className={bool ? 'grid' : 'expanded'}>
@@ -27,7 +34,7 @@ function App() {
 				>
 					<Transition.PreserveAspectRatio style={{ color: 'blue' }}>
 						{bool && <div>HELLO</div>}
-						{!bool && <div>Quis blandit turpis cursus in hac habitasse platea dictumst. Quis eleifend quam adipiscing vitae proin sagittis nisl. Aliquet lectus proin nibh nisl. Interdum velit laoreet id donec ultrices tincidunt arcu non. Duis ut diam quam nulla porttitor massa id neque aliquam. Libero id faucibus nisl tincidunt eget nullam non nisi. Ut diam quam nulla porttitor massa id neque aliquam. Morbi non arcu risus quis varius quam quisque. Iaculis eu non diam phasellus vestibulum lorem sed. Congue mauris rhoncus aenean vel elit scelerisque mauris. Pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper. Tincidunt id aliquet risus feugiat in ante metus. Vel quam elementum pulvinar etiam non quam lacus suspendisse. Dolor sit amet consectetur adipiscing elit duis. Pretium aenean pharetra magna ac. Imperdiet nulla malesuada pellentesque elit eget gravida.</div>}
+			 			{!bool && <div>Quis blandit turpis cursus in hac habitasse platea dictumst. Quis eleifend quam adipiscing vitae proin sagittis nisl. Aliquet lectus proin nibh nisl. Interdum velit laoreet id donec ultrices tincidunt arcu non. Duis ut diam quam nulla porttitor massa id neque aliquam. Libero id faucibus nisl tincidunt eget nullam non nisi. Ut diam quam nulla porttitor massa id neque aliquam. Morbi non arcu risus quis varius quam quisque. Iaculis eu non diam phasellus vestibulum lorem sed. Congue mauris rhoncus aenean vel elit scelerisque mauris. Pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper. Tincidunt id aliquet risus feugiat in ante metus. Vel quam elementum pulvinar etiam non quam lacus suspendisse. Dolor sit amet consectetur adipiscing elit duis. Pretium aenean pharetra magna ac. Imperdiet nulla malesuada pellentesque elit eget gravida.</div>}
 					</Transition.PreserveAspectRatio>
 				</Transition>
 
