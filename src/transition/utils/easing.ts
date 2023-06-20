@@ -1,3 +1,6 @@
+import { cubicBezier } from './cubic-bezier';
+import { Vector } from './vector';
+
 export type Easing = {
 	start: () => void;
 	stop: () => void;
@@ -31,6 +34,16 @@ type time = number;
 type onStart = () => void;
 type during = (delta: number) => void;
 type onEnd = () => void;
+type EaseFunction = (t: number) => number;
+
+// From MDN: cubic-bezier(0.0, 0.0, 0.58, 1.0) https://developer.mozilla.org/en-US/docs/Web/CSS/easing-function
+const easeOut = cubicBezier(new Vector(0, 0), new Vector(0.58, 1.0));
+// From MDN: cubic-bezier(0.42, 0.0, 1.0, 1.0) https://developer.mozilla.org/en-US/docs/Web/CSS/easing-function
+const easeIn = cubicBezier(new Vector(0.42, 0), new Vector(1.0, 1.0));
+// From MDN: cubic-bezier(0.42, 0.0, 0.58, 1.0) https://developer.mozilla.org/en-US/docs/Web/CSS/easing-function
+const easeInOut = cubicBezier(new Vector(0.42, 0), new Vector(0.58, 1.0));
+// Uses sin curve to ease out as d/dx of sin(x) is cos(x) so rate of change slows as x -> pi/2
+const sinEaseOut: EaseFunction = x => Math.sin((x * Math.PI) / 2);
 
 class Ease {
 	time: time;
@@ -40,8 +53,9 @@ class Ease {
 	hasStarted: boolean;
 	stopped: boolean;
 	firstTimestamp: number;
+	easeFunction: EaseFunction;
 
-	constructor(time: number, onStart: onStart, during: during, onEnd: onEnd) {
+	constructor(time: number, onStart: onStart, during: during, onEnd: onEnd, easeFunction: EaseFunction = sinEaseOut) {
 		this.time = time;
 		this.onStart = onStart;
 		this.during = during;
@@ -49,6 +63,7 @@ class Ease {
 		this.hasStarted = false;
 		this.stopped = false;
 		this.firstTimestamp = 0;
+		this.easeFunction = easeFunction;
 	}
 
 	run(timestamp: number) {
@@ -63,7 +78,7 @@ class Ease {
 		}
 
 		const progress = timestamp - this.firstTimestamp;
-		const delta = (x => Math.sin((x * Math.PI) / 2))(progress / this.time);
+		const delta = this.easeFunction(progress / this.time);
 
 		if (progress < this.time) {
 			this.during(delta);

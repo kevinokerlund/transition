@@ -1,0 +1,15 @@
+
+.other-box {
+    background-color: darkgray;
+    color: white;
+}
+
+.other-box-small {
+    height: 100px;
+    width: 500px;
+}
+
+.other-box-large {
+    height: 300px;
+    width: 800px;
+}
